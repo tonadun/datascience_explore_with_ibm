@@ -50,46 +50,41 @@ app.layout = html.Div(children=[html.H1('SpaceX Launch Records Dashboard',
 
 # TASK 2:
 # Add a callback function for `site-dropdown` as input, `success-pie-chart` as output
-# Function decorator to specify function input and output
-@app.callback(Output(component_id='success-pie-chart', component_property='figure'),
-              Input(component_id='site-dropdown', component_property='value'))
-
-def get_pie_chart(entered_site):
-    filtered_df = spacex_df
-    if entered_site == 'ALL':
-        fig = px.pie(filtered_df, values='class', 
-        names='Launch Site', 
-        title='Launch Site wise Success Rate')
-        return fig
+@app.callback( Output(component_id='success-pie-chart', component_property='figure'),
+               Input(component_id='site-dropdown', component_property='value'))
+def get_pie_chart(launch_site):
+    if launch_site == 'All Sites':
+        fig = px.pie(values=spacex_df.groupby('Launch Site')['class'].mean(), 
+                     names=spacex_df.groupby('Launch Site')['Launch Site'].first(),
+                     title='Total Success Launches by Site')
     else:
-        # filtered_df = spacex_df[spacex_df['Launch Site'] == entered_site]
-        # outcomes = np.where(filtered_df['class'] == 1, 'success', 'fail')
-        # filtered_df['outcome'] = outcomes
-        # fig = px.pie(filtered_df, values='outcome', 
-        # names='outcome', 
-        # title='Success Rate on ')
-        # return fig
+        fig = px.pie(values=spacex_df[spacex_df['Launch Site']==str(launch_site)]['class'].value_counts(normalize=True), 
+                     names=spacex_df['class'].unique(), 
+                     title='Total Success Launches for Site {}'.format(launch_site))
+    return(fig)
 
-        filtered_df = spacex_df[spacex_df['Launch Site'] == entered_site]
-    
-        # Calculate the counts of success and failed outcomes
-        success_count = filtered_df[filtered_df['class'] == 1].shape[0]
-        fail_count = filtered_df[filtered_df['class'] == 0].shape[0]
-        
-        # Create labels and sizes for the pie chart
-        labels = ['Success', 'Failed']
-        sizes = [success_count, fail_count]
-        
-        # Plot the pie chart
-        # Create a DataFrame for the pie chart
-        pie_data = {'Outcome': ['Success', 'Failed'], 'Count': [success_count, fail_count]}
-        pie_df = pd.DataFrame(pie_data)
-        
-        # Plot the pie chart
-        fig = px.pie(pie_df, values='Count', names='Outcome', title='Success vs Failed Launches for {}'.format(entered_site))
-    
-        return fig
-        # return the outcomes piechart for a selected site
+# TASK 4:
+# Add a callback function for `site-dropdown` and `payload-slider` as inputs, `success-payload-scatter-chart` as output
+@app.callback( Output(component_id='success-payload-scatter-chart', component_property='figure'),
+              [Input(component_id='site-dropdown', component_property='value'),
+               Input(component_id='payload-slider',component_property='value')])
+def get_payload_chart(launch_site, payload_mass):
+    if launch_site == 'All Sites':
+        fig = px.scatter(spacex_df[spacex_df['Payload Mass (kg)'].between(payload_mass[0], payload_mass[1])], 
+                x="Payload Mass (kg)",
+                y="class",
+                color="Booster Version Category",
+                hover_data=['Launch Site'],
+                title='Correlation Between Payload and Success for All Sites')
+    else:
+        df = spacex_df[spacex_df['Launch Site']==str(launch_site)]
+        fig = px.scatter(df[df['Payload Mass (kg)'].between(payload_mass[0], payload_mass[1])], 
+                x="Payload Mass (kg)",
+                y="class",
+                color="Booster Version Category",
+                hover_data=['Launch Site'],
+                title='Correlation Between Payload and Success for Site {}'.format(launch_site))
+    return(fig)
 
 # TASK 4:
 # Add a callback function for `site-dropdown` and `payload-slider` as inputs, `success-payload-scatter-chart` as output
